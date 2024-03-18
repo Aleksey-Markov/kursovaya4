@@ -71,11 +71,12 @@ class HHVacancies:
         :param data:
         :return:
         """
-        num_vac = 0
+        num_vac = 1
         vacancies = []
         for vacs in data['items']:
-            vac0 = HHVacancies(num_vac, vacs['name'], vacs['address'], vacs['alternate_url'], vacs['salary'],
-                               vacs['snippet']['requirement'], vacs['snippet']['responsibility'])
+            vac0 = HHVacancies({'Номер вакансии':num_vac}, {'Название вакансии':vacs['name']}, {'Адрес':vacs['address']},
+                               {'Ссылка на вакансию':vacs['alternate_url']}, {'Заработная плата':vacs['salary']},
+                               {'Требования':vacs['snippet']['requirement']}, {'Обязанности':vacs['snippet']['responsibility']})
             vacancies.append(vac0)
             num_vac += 1
         return vacancies
@@ -108,5 +109,61 @@ class HHVacancies:
             return f"{self.salary['from']} - {self.salary['to']}"
 
 
+class JSONAbstract(ABC):
+    def add_to_json(self, *args, **kwargs):
+        pass
+
+    def get_vacancies_by_filter(self, *args, **kwargs):
+        pass
+
+    def delete_vacancies(self, *args, **kwargs):
+        pass
+
+
+class JSON(JSONAbstract):
+    def __init__(self, vacancies):
+        self.vacancies = vacancies
+
+    def add_to_json(self, vac):
+        with open('vacancies.json', 'a', encoding='utf=8') as f:
+            f.write(vac)
+
+    def delete_vacancies(self):
+        with open('vacancies.json', 'w', encoding='utf=8'):
+            pass
+
+    def get_vacancies_by_filter(self, *args, **kwargs):
+        with open('vacancies.json', 'r', encoding='utf=8') as f:
+            criterion = input('Выберите критерий для поиска по вакансиям: \nВведите "key" для поиска по ключевому слову\n'
+                              'Введите "city" для поиска по городу\nВведите "money" для поиска по зарплате\n')
+            if criterion == 'key':
+                key = []
+                key_word = input('Введите ключевое слово для поиска по вакансиям: \n')
+                for i in f:
+                    if key_word in i:
+                        key.append(i)
+                print(key)
+            if criterion == 'city':
+                cities = []
+                city = input('Введите город для поиска по вакансиям: \n')
+                for i in f:
+                    if city in i:
+                        cities.append(i)
+                print(cities)
+            if criterion == 'money':
+                money = []
+                salary = input('Введите зарплату для поиска по вакансиям: \n')
+                for i in f:
+                    if salary in i:
+                        money.append(i)
+                print(money)
+
+
+
 
 v = HHVacancies.sort_vacancies(dat)
+list_vacs = JSON(v)
+list_vacs.get_vacancies_by_filter()
+# with open('vacancies.json', 'r', encoding='utf=8') as f:
+#     for i in f:
+#         print(i)
