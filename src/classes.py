@@ -157,9 +157,3 @@ class JSON(JSONAbstract):
                     if salary in i:
                         money.append(i)
                 print(money)
-
-
-v = HHVacancies.sort_vacancies('vacancies.json')
-print(v)
-
-q = JSON.add_to_json(v)
