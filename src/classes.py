@@ -72,7 +72,7 @@ class HHVacancies:
         with open(data, 'r', encoding='utf=8') as file:
             text = json.load(file)
         for vacs in text['items']:
-            vac0 = HHVacancies(num_vac, vacs['name'], vacs['address'],
+            vac0 = HHVacancies(num_vac, vacs['name'], vacs['area']['name'],
                                vacs['alternate_url'], vacs['salary'],
                                vacs['snippet']['requirement'], vacs['snippet']['responsibility'])
             vacancies.append(vac0)
@@ -157,3 +157,11 @@ class JSON(JSONAbstract):
                     if salary in i:
                         money.append(i)
                 print(money)
+
+
+sp = HeadHunter('https://api.hh.ru/vacancies')
+vac = sp.get_vacancies('Python')
+
+sp.save_to_json(vac, 'vacancies.json')
+v = HHVacancies.sort_vacancies('vacancies.json')
+chtoto = JSON.add_to_json(v)
