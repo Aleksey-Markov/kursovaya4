@@ -26,7 +26,7 @@ class HeadHunter(API):
         :param keyword:
         :return:
         """
-        response = requests.get(self.url + '?text=' + keyword)
+        response = requests.get(self.url, params={'text': keyword})
         return response.json()
 
     @staticmethod
@@ -39,10 +39,6 @@ class HeadHunter(API):
         """
         with open(file_to_save, 'w', encoding='utf8') as q:
             json.dump(data, q, ensure_ascii=False, indent=4)
-
-
-hh = HeadHunter('https://api.hh.ru/vacancies')
-dat = hh.get_vacancies('Python')
 
 
 class HHVacancies:
@@ -59,10 +55,10 @@ class HHVacancies:
         self.responsibility = responsibility
 
     def __repr__(self):
-        return f'HHvacancies({self.num}, {self.name}, {self.city}, {self.link}, {self.salary}, {self.requirement}, {self.responsibility})'
+        return f'{self.num}, {self.name}, {self.city}, {self.link}, {self.salary}, {self.requirement}, {self.responsibility}'
 
     def __str__(self):
-        return f'Вакансия: {self.name}'
+        return f'Вакансия: {self.name}, Зарплата: {self.salary["from"]}, Ссылка на вакансию'
 
     @staticmethod
     def sort_vacancies(data):
@@ -73,10 +69,12 @@ class HHVacancies:
         """
         num_vac = 1
         vacancies = []
-        for vacs in data['items']:
-            vac0 = HHVacancies({'Номер вакансии':num_vac}, {'Название вакансии':vacs['name']}, {'Адрес':vacs['address']},
-                               {'Ссылка на вакансию':vacs['alternate_url']}, {'Заработная плата':vacs['salary']},
-                               {'Требования':vacs['snippet']['requirement']}, {'Обязанности':vacs['snippet']['responsibility']})
+        with open(data, 'r', encoding='utf=8') as file:
+            text = json.load(file)
+        for vacs in text['items']:
+            vac0 = HHVacancies(num_vac, vacs['name'], vacs['address'],
+                               vacs['alternate_url'], vacs['salary'],
+                               vacs['snippet']['requirement'], vacs['snippet']['responsibility'])
             vacancies.append(vac0)
             num_vac += 1
         return vacancies
@@ -121,16 +119,18 @@ class JSONAbstract(ABC):
 
 
 class JSON(JSONAbstract):
-    def __init__(self, vacancies):
-        self.vacancies = vacancies
+    @staticmethod
+    def add_to_json(data):
+        vacs_list = []
+        for i in data:
+            vacs_list.append({'Номер вакансии': i.num, 'Название вакансии': i.name, 'Город': i.city, 'Ссылка': i.link,
+                           'Зарплата': i.salary, 'Требования': i.requirement, 'Обязанности': i.responsibility})
 
-    def add_to_json(self, vac):
-        with open('vacancies.json', 'a', encoding='utf=8') as f:
-            f.write(vac)
+        with open('spisochek.json', 'w', encoding='utf=8') as f:
+            json.dump(vacs_list, f, ensure_ascii=False, indent=4)
 
     def delete_vacancies(self):
-        with open('vacancies.json', 'w', encoding='utf=8'):
-            pass
+        pass
 
     def get_vacancies_by_filter(self, *args, **kwargs):
         with open('vacancies.json', 'r', encoding='utf=8') as f:
@@ -159,11 +159,7 @@ class JSON(JSONAbstract):
                 print(money)
 
 
+v = HHVacancies.sort_vacancies('vacancies.json')
+print(v)
 
-
-v = HHVacancies.sort_vacancies(dat)
-list_vacs = JSON(v)
-list_vacs.get_vacancies_by_filter()
-# with open('vacancies.json', 'r', encoding='utf=8') as f:
-#     for i in f:
-#         print(i)
+q = JSON.add_to_json(v)
