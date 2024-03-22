@@ -26,7 +26,7 @@ class HeadHunter(API):
         :param keyword:
         :return:
         """
-        response = requests.get(self.url, params={'text': keyword})
+        response = requests.get(self.url, params={'text': keyword, 'per_page': 100})
         return response.json()
 
     @staticmethod
@@ -45,7 +45,7 @@ class HHVacancies:
     """
     класс для взаимодействия с вакансиями
     """
-    def __init__(self, num, name, city, link, salary, requirement, responsibility):
+    def __init__(self, num, name, city, link, salary, requirement='Не указано', responsibility='Не указаны'):
         self.num = num
         self.name = name
         self.city = city
@@ -58,7 +58,7 @@ class HHVacancies:
         return f'{self.num}, {self.name}, {self.city}, {self.link}, {self.salary}, {self.requirement}, {self.responsibility}'
 
     def __str__(self):
-        return f'Вакансия: {self.name}, Зарплата: {self.salary["from"]}, Ссылка на вакансию'
+        return f'Вакансия: {self.name}'
 
     @staticmethod
     def sort_vacancies(data):
@@ -72,6 +72,15 @@ class HHVacancies:
         with open(data, 'r', encoding='utf=8') as file:
             text = json.load(file)
         for vacs in text['items']:
+            if vacs['salary'] is None:
+                vacs['salary'] = 0
+            else:
+                if vacs['salary']['from'] is None and vacs['salary']['to'] is not None:
+                    vacs['salary'] = vacs['salary']['to']
+                elif vacs['salary']['from'] is not None and vacs['salary']['to'] is None:
+                    vacs['salary'] = vacs['salary']['from']
+                elif vacs['salary']['from'] is not None and vacs['salary']['to'] is not None:
+                    vacs['salary'] = vacs["salary"]["from"]
             vac0 = HHVacancies(num_vac, vacs['name'], vacs['area']['name'],
                                vacs['alternate_url'], vacs['salary'],
                                vacs['snippet']['requirement'], vacs['snippet']['responsibility'])
@@ -127,53 +136,45 @@ class JSON(JSONAbstract):
             f.seek(0)
             json.dump(file, f, ensure_ascii=False, indent=4)
 
-
     @staticmethod
-    def create_json(data):
+    def create_json(data, file_to_save):
         vacs_list = []
         for i in data:
+            if i.responsibility is None:
+                i.responsibility = 'Не указаны'
+            if i.requirement is None:
+                i.requirement = 'Не указаны'
+
             vacs_list.append({'Номер вакансии': i.num, 'Название вакансии': i.name, 'Город': i.city, 'Ссылка': i.link,
                            'Зарплата': i.salary, 'Требования': i.requirement, 'Обязанности': i.responsibility})
 
-        with open('spisochek.json', 'w', encoding='utf=8') as f:
+        with open(file_to_save, 'w', encoding='utf=8') as f:
             json.dump(vacs_list, f, ensure_ascii=False, indent=4)
 
     def delete_vacancies(self):
         pass
 
-    def get_vacancies_by_filter(self, *args, **kwargs):
-        with open('vacancies.json', 'r', encoding='utf=8') as f:
-            criterion = input('Выберите критерий для поиска по вакансиям: \nВведите "key" для поиска по ключевому слову\n'
-                              'Введите "city" для поиска по городу\nВведите "money" для поиска по зарплате\n')
-            if criterion == 'key':
-                key = []
-                key_word = input('Введите ключевое слово для поиска по вакансиям: \n')
-                for i in f:
-                    if key_word in i:
-                        key.append(i)
-                print(key)
-            if criterion == 'city':
-                cities = []
-                city = input('Введите город для поиска по вакансиям: \n')
-                for i in f:
-                    if city in i:
-                        cities.append(i)
-                print(cities)
-            if criterion == 'money':
-                money = []
-                salary = input('Введите зарплату для поиска по вакансиям: \n')
-                for i in f:
-                    if salary in i:
-                        money.append(i)
-                print(money)
+    @staticmethod
+    def get_vacancies_by_filter(key_word, file):
+        user_list = []
+        with open(file, 'r', encoding='utf=8') as f:
+            text = json.load(f)
+        for i in text:
+            if key_word in i['Название вакансии'] or key_word in i['Требования'] or key_word in i['Обязанности']:
+                user_list.append(i)
+        for vacs in user_list:
+            for k, v in vacs.items():
+                print(f'{k}:{v}')
+            print()
 
-
-sp = HeadHunter('https://api.hh.ru/vacancies')
-vac = sp.get_vacancies('Python')
-
-sp.save_to_json(vac, 'vacancies.json')
-v = HHVacancies.sort_vacancies('vacancies.json')
-JSON.create_json(v)
-
+    @staticmethod
+    def sort_by_salary(n, file):
+        with open(file, 'r', encoding='utf=8') as f:
+            text = json.load(f)
+            sorted_list = sorted(text, key=lambda x: x['Зарплата'], reverse=True)
+            for i in sorted_list[0:n]:
+                for k, v in i.items():
+                    print(f'{k}:{v}')
+                print()
 
 
