@@ -120,7 +120,16 @@ class JSONAbstract(ABC):
 
 class JSON(JSONAbstract):
     @staticmethod
-    def add_to_json(data):
+    def add_to_json(vacancy, file):
+        with open(file, 'r+', encoding='utf=8') as f:
+            file = json.load(f)
+            file.append(vacancy)
+            f.seek(0)
+            json.dump(file, f, ensure_ascii=False, indent=4)
+
+
+    @staticmethod
+    def create_json(data):
         vacs_list = []
         for i in data:
             vacs_list.append({'Номер вакансии': i.num, 'Название вакансии': i.name, 'Город': i.city, 'Ссылка': i.link,
@@ -164,4 +173,7 @@ vac = sp.get_vacancies('Python')
 
 sp.save_to_json(vac, 'vacancies.json')
 v = HHVacancies.sort_vacancies('vacancies.json')
-chtoto = JSON.add_to_json(v)
+JSON.create_json(v)
+
+
+
